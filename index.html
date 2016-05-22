@@ -124,7 +124,27 @@
                 })
                 .on("mouseout", function (d, i) {
                     tooltip.classed("hidden", true)
-                });
+                })
+        /*.append("text")
+         /*.attr("transform", function (d) {
+         return "translate(" + path.centroid(d) + ")";
+         })
+         .text(function (d) {
+         return 'OK';
+         });*/
+
+        svg.selectAll("text")
+                .data(countries)
+                .enter().insert("text")
+                .attr("transform", function (d) {
+                    return "translate(" + path.centroid(d) + ")";
+                })
+                .attr("dx", function (d) { return d.properties.dx || "0"; })
+                .attr("dy", function (d) { return d.properties.dy || "0.35em"; })
+                .text(function (d) {
+                    console.log(d);
+                    return d.name
+                })
 
 
     }
