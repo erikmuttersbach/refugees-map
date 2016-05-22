@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
 
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
 
     <style>
         body {
             background: #fcfcfa;
-            font-family: "Open Sans";
+            font-family: "Roboto";
         }
 
         .stroke {
@@ -27,40 +27,72 @@
 
         .country {
             fill: rgb(238, 238, 238);
-            stroke: #000;
+            stroke-width: 0.5;
+            stroke: gray;
         }
 
         div.tooltip {
             color: #222;
             background: #fff;
-            padding: .5em;
-            text-shadow: #f5f5f5 0 1px 0;
+            padding: 10px;
             border-radius: 2px;
             box-shadow: 0px 0px 2px 0px #a6a6a6;
             opacity: 0.9;
             position: absolute;
+            font-size: 14px;
+            font-family: "Roboto";
         }
 
         .country-REF {
-            fill: rgb(102, 143, 178)
+            fill: rgba(102, 143, 178, 0.9)
         }
 
         .country-EU {
-            fill: rgb(236, 166, 99)
+            fill: rgba(236, 166, 99, 0.8)
         }
 
         body {
-            text-align: center;
             margin: 0;
             padding: 0;
         }
 
         svg {
+            margin-left: auto;
+            margin-right: auto;
             margin: 0;
             padding: 0;
         }
 
+        svg text {
+            font-size: 14px;
+            font-family: "Roboto";
+        }
 
+        .country.highlighted {
+            stroke: black;
+            stroke-width: 2;
+        }
+
+        .legend circle {
+            fill: none;
+            stroke: #ccc;
+        }
+
+        .legend text {
+            fill: #777;
+            font: 10px sans-serif;
+            text-anchor: middle;
+        }
+
+        .legend text.legend-title {
+            fill: black;
+            font-size: 14px;
+            font-width: bold;
+        }
+
+        .legend-body {
+            font-size: 10px;
+        }
     </style>
 
     <script src="js/d3.v3.min.js"></script>
@@ -79,7 +111,7 @@
 
     var projection = d3.geo.mercator()
             .scale(370)
-            .translate([width / 2.7, height / 1])
+            .translate([width / 3.5, height / 1])
             .precision(.1);
 
     var path = d3.geo.path()
@@ -89,18 +121,10 @@
             .attr("width", width)
             .attr("height", height);
 
-    /*
-     svg.append("use")
-     .attr("class", "stroke")
-     .attr("xlink:href", "#sphere");
-
-     svg.append("use")
-     .attr("class", "fill")
-     .attr("xlink:href", "#sphere");
-     */
-
     var tooltip = d3.select("body").append("div")
             .attr("class", "tooltip");
+    tooltip
+            .classed("hidden", true)
 
     d3_queue.queue()
             .defer(d3.json, "data/world-110m.json")
@@ -112,7 +136,30 @@
         if (error) throw error;
 
         var bubbleTranslations = {
-            'Pakistan': [-15, 27]
+            'Pakistan': [-15, 24],
+            'Senegal': [0, -5],
+            'Finland': [0, 20]
+        }
+
+        var bubbleTextTop = {
+            'Afghanistan': true,
+            'Germany': true,
+            'Senegal': true,
+            'UK': true,
+            'Denmark': true,
+            'Netherlands': true,
+            'Hungary': true,
+            'Kosovo': true,
+            'Austria': true,
+        }
+
+        var bubbleTextT = {
+            'Germany': [50, 20],
+            'Hungary': [47, 25],
+            'Switzerland': [-38, 0],
+            'Kosovo': [-5, 0],
+            'Austria': [25, 3],
+            'Bulgaria': [15, 0]
         }
 
         var countries = topojson.feature(world, world.objects.countries).features;
@@ -129,12 +176,11 @@
                 }
             });
 
-            d['bubbleTranslations'] = bubbleTranslations[d.name] || [0,0];
+            d['bubbleTranslations'] = bubbleTranslations[d.name] || [0, 0];
         });
 
 
-
-        var relevantCountries = countries.filter(function(country) {
+        var relevantCountries = countries.filter(function (country) {
             return country.count;
         })
 
@@ -146,24 +192,6 @@
                 .enter().insert("path")
                 .attr("class", "country")
                 .attr("d", path)
-                /*.style("fill", function (d, i) {
-                 return color(d.color = d3.max(neighbors[i], function (n) {
-                 return countries[n].color;
-                 }) + 1 | 0);
-                 })*/
-                .on("mousemove", function (d, i) {
-                    var mouse = d3.mouse(svg.node()).map(function (d) {
-                        return parseInt(d);
-                    });
-
-                    tooltip
-                            .classed("hidden", false)
-                            .attr("style", "left:" + (mouse[0] + 25) + "px;top:" + mouse[1] + "px")
-                            .html(d.name)
-                })
-                .on("mouseout", function (d, i) {
-                    tooltip.classed("hidden", true)
-                })
 
         /*svg.selectAll("text")
          .data(countries)
@@ -176,19 +204,18 @@
          return d.name
          })*/
 
-        var A = 5000;
+        var A = 4500;
         var c_max = 45295;
 
         svg.selectAll(".bubble")
                 .data(relevantCountries)
                 .enter().insert("circle")
-                //.attr("class", "bubble")
-                .attr("class", function(country) {
-                    return 'country country-'+country.ref;
+                .attr("class", function (country) {
+                    return 'country country-' + country.ref + ' country-' + country.id;
                 })
-                .attr("r", function(country) {
-                    var a = country.count/c_max * A;
-                    return Math.sqrt(a/Math.PI)
+                .attr("r", function (country) {
+                    var a = country.count / c_max * A;
+                    return Math.sqrt(a / Math.PI)
                 })
                 .attr("transform", function (d) {
                     var t = path.centroid(d)
@@ -196,7 +223,121 @@
                     t[1] += d.bubbleTranslations[1]
                     return "translate(" + t + ")";
                 })
+                .on("mousemove", function (d, i) {
+                    var mouse = d3.mouse(svg.node()).map(function (d) {
+                        return parseInt(d);
+                    });
 
+                    svg.select('.country-' + d.id).classed('highlighted', true)
+
+                    tooltip
+                            .classed("hidden", false)
+                            .attr("style", "left:" + (mouse[0] + 25) + "px;top:" + mouse[1] + "px")
+                            .html(d.count.toLocaleString('en'))
+                })
+                .on("mouseout", function (d, i) {
+                    tooltip.classed("hidden", true)
+                    svg.select('.country-' + d.id).classed('highlighted', false)
+                })
+
+        svg.selectAll(".bubble")
+                .data(relevantCountries)
+                .enter().insert("text")
+                .attr('class', 'test')
+                .attr('text-anchor', 'middle')
+                .attr('dy', function (country) {
+                    var a = country.count / c_max * A;
+                    var r = Math.sqrt(a / Math.PI) + (bubbleTextTop[country.name] ? 5 : 15);
+                    return r * (bubbleTextTop[country.name] ? -1 : 1);
+                })
+                .attr("transform", function (d) {
+                    var t = path.centroid(d)
+                    t[0] += d.bubbleTranslations[0]
+                    t[1] += d.bubbleTranslations[1]
+
+                    if (bubbleTextT[d.name]) {
+                        t[0] += bubbleTextT[d.name][0]
+                        t[1] += bubbleTextT[d.name][1]
+                    }
+
+                    return "translate(" + t + ")";
+                })
+                .text(function (country) {
+                    return country.name;
+                })
+
+        function radius(c) {
+            return Math.sqrt(c / c_max * A / Math.PI);
+        }
+
+        // Number of Refugees Legend
+        var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (100) + "," + (160) + ")")
+                .selectAll("g")
+                .data([1000, 15000, 40000])
+                .enter().append("g");
+
+        legend.append("circle")
+                .attr("cy", function (d) {
+                    return -radius(d);
+                })
+                .attr("r", radius);
+
+        legend.append("text")
+                .attr("y", function (d) {
+                    return -2 * radius(d) - 15;
+                })
+                .attr("dy", "1.3em")
+                .text(d3.format(".1s"));
+
+        svg.select('.legend')
+                .append('text')
+                .attr('class', 'legend-title')
+                .attr('transform', function () {
+                    var t = [0, -90];
+                    return "translate(" + t + ")";
+                })
+                .text(function () {
+                    return "Number of refugees"
+                })
+
+        // Color legend
+        var colorLegend = svg.append("g")
+                .attr("class", "color-legend")
+                .attr("transform", "translate(" + (100) + "," + (250) + ")")
+                .selectAll("g")
+                .data([5000, 5000])
+                .enter().append("g");
+
+        colorLegend.append("circle")
+                .attr('fill', function (d, i) {
+                    return i ? 'rgba(102, 143, 178, 0.9)' : 'rgba(236, 166, 99, 0.8)'
+                })
+                .attr("cy", function (d, i) {
+                    return i * 40;
+                })
+                .attr('cx', -41)
+                .attr("r", radius);
+
+        colorLegend.append("text")
+                .attr("dy", function (d, i) {
+                    return i * 40 + 5;
+                })
+                .attr('dx', -20)
+                .attr('class', 'legend-body')
+                .text(function(d, i) {
+                    return i ? 'Refugees\' destination' : 'Refugees\' origin'
+                });
+
+        svg.select('.color-legend')
+                .append('text')
+                .attr('class', 'legend-title')
+                .attr('text-anchor', 'middle')
+                .attr('transform', 'translate(0, -25)')
+                .text(function () {
+                    return "Country category"
+                })
 
     }
 
@@ -223,7 +364,7 @@
         <param name='display_overlay' value='yes'/>
         <param name='display_count' value='yes'/>
         <param name='showTabs' value='y'/>
-    </object>-->
-</div>
+    </object>
+</div>-->
 </body>
 </html>
