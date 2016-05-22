@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            background: #fcfcfa;
+            font-family: "Open Sans";
+        }
+
+        .stroke {
+            fill: none;
+            stroke: #000;
+            stroke-width: 3px;
+        }
+
+        .land {
+            fill: #222;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .country {
+            fill: rgb(238, 238, 238);
+            stroke: #000;
+        }
+
+        div.tooltip {
+            color: #222;
+            background: #fff;
+            padding: .5em;
+            text-shadow: #f5f5f5 0 1px 0;
+            border-radius: 2px;
+            box-shadow: 0px 0px 2px 0px #a6a6a6;
+            opacity: 0.9;
+            position: absolute;
+        }
+
+
+    </style>
+
+    <script src="js/d3.v3.min.js"></script>
+    <script src="js/d3-queue.v2.min.js"></script>
+    <script src="js/d3.geo.projection.v0.min.js"></script>
+    <script src="js/topojson.v1.min.js"></script>
+</head>
+
+<body>
+<script>
+    /*global d3,topojson*/
+
+    var width = 960,
+            height = 580;
+    var color = d3.scale.category10();
+
+    var projection = d3.geo.mercator()
+            .scale(500)
+            .translate([width / 2.2, height / 0.8])
+            .precision(.1);
+
+    var path = d3.geo.path()
+            .projection(projection);
+
+    var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+    /*
+     svg.append("use")
+     .attr("class", "stroke")
+     .attr("xlink:href", "#sphere");
+
+     svg.append("use")
+     .attr("class", "fill")
+     .attr("xlink:href", "#sphere");
+     */
+
+    var tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip");
+
+    d3_queue.queue()
+            .defer(d3.json, "data/world-110m.json")
+            .defer(d3.tsv, "data/world-110m-country-names.tsv")
+            .await(ready);
+
+    function ready(error, world, names) {
+        if (error) throw error;
+
+        window.world = world;
+
+        var countries = topojson.feature(world, world.objects.countries).features;
+        var neighbors = topojson.neighbors(world.objects.countries.geometries);
+        countries.forEach(function (d) {
+            d.name = names.filter(function (n) {
+                return d.id == n.id;
+            })[0].name;
+        });
+
+
+        svg.selectAll(".country")
+                .data(countries)
+                .enter().insert("path")
+                .attr("class", "country")
+                .attr("d", path)
+                /*.style("fill", function (d, i) {
+                 return color(d.color = d3.max(neighbors[i], function (n) {
+                 return countries[n].color;
+                 }) + 1 | 0);
+                 })*/
+                .on("mousemove", function (d, i) {
+                    var mouse = d3.mouse(svg.node()).map(function (d) {
+                        return parseInt(d);
+                    });
+
+                    tooltip
+                            .classed("hidden", false)
+                            .attr("style", "left:" + (mouse[0] + 25) + "px;top:" + mouse[1] + "px")
+                            .html(d.name)
+                })
+                .on("mouseout", function (d, i) {
+                    tooltip.classed("hidden", true)
+                });
+
+
+    }
+
+
+    d3.select(self.frameElement).style("height", height + "px");
+</script>
+
+<script type='text/javascript' src='https://public.tableau.com/javascripts/api/viz_v1.js'></script>
+<div class='tableauPlaceholder' style='width: 804px; height: 742px;'>
+    <noscript><a href='#'><img alt='Dashboard 6 '
+                               src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;ex&#47;experiment_final_version&#47;Dashboard6&#47;1_rss.png'
+                               style='border: none'/></a></noscript>
+    <object class='tableauViz' width='804' height='742' style='display:none;'>
+        <param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F'/>
+        <param name='site_root' value=''/>
+        <param name='name' value='experiment_final_version&#47;Dashboard6'/>
+        <param name='tabs' value='no'/>
+        <param name='toolbar' value='yes'/>
+        <param name='static_image'
+               value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;ex&#47;experiment_final_version&#47;Dashboard6&#47;1.png'/>
+        <param name='animate_transition' value='yes'/>
+        <param name='display_static_image' value='yes'/>
+        <param name='display_spinner' value='yes'/>
+        <param name='display_overlay' value='yes'/>
+        <param name='display_count' value='yes'/>
+        <param name='showTabs' value='y'/>
+    </object>
+</div>
+</body>
+</html>
