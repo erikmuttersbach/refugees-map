@@ -41,6 +41,18 @@
             position: absolute;
         }
 
+        .country-REF {
+            fill: rgb(102, 143, 178)
+        }
+
+        .country-EU {
+            fill: rgb(236, 166, 99)
+        }
+
+        body {
+            text-align: center;
+        }
+
 
     </style>
 
@@ -59,8 +71,8 @@
     var color = d3.scale.category10();
 
     var projection = d3.geo.mercator()
-            .scale(500)
-            .translate([width / 2.2, height / 0.8])
+            .scale(370)
+            .translate([width / 2.7, height / 1])
             .precision(.1);
 
     var path = d3.geo.path()
@@ -86,12 +98,15 @@
     d3_queue.queue()
             .defer(d3.json, "data/world-110m.json")
             .defer(d3.tsv, "data/world-110m-country-names.tsv")
+            .defer(d3.csv, "data/refugees.tsv")
             .await(ready);
 
-    function ready(error, world, names) {
+    function ready(error, world, names, refugees) {
         if (error) throw error;
 
-        window.world = world;
+        var bubbleTranslations = {
+            'Pakistan': [-15, 27]
+        }
 
         var countries = topojson.feature(world, world.objects.countries).features;
         var neighbors = topojson.neighbors(world.objects.countries.geometries);
@@ -99,8 +114,25 @@
             d.name = names.filter(function (n) {
                 return d.id == n.id;
             })[0].name;
+
+            refugees.forEach(function (r) {
+                if (r.country == d.name) {
+                    d.count = parseInt(r.count);
+                    d.ref = r.ref;
+                }
+            });
+
+            d['bubbleTranslations'] = bubbleTranslations[d.name] || [0,0];
         });
 
+
+
+        var relevantCountries = countries.filter(function(country) {
+            return country.count;
+        })
+
+        window.countries = countries;
+        window.refugees = refugees;
 
         svg.selectAll(".country")
                 .data(countries)
@@ -125,25 +157,37 @@
                 .on("mouseout", function (d, i) {
                     tooltip.classed("hidden", true)
                 })
-        /*.append("text")
-         /*.attr("transform", function (d) {
+
+        /*svg.selectAll("text")
+         .data(countries)
+         .enter().insert("text")
+         .attr("transform", function (d) {
          return "translate(" + path.centroid(d) + ")";
          })
          .text(function (d) {
-         return 'OK';
-         });*/
+         //console.log(d);
+         return d.name
+         })*/
 
-        svg.selectAll("text")
-                .data(countries)
-                .enter().insert("text")
-                .attr("transform", function (d) {
-                    return "translate(" + path.centroid(d) + ")";
+        var A = 5000;
+        var c_max = 45295;
+
+        svg.selectAll(".bubble")
+                .data(relevantCountries)
+                .enter().insert("circle")
+                //.attr("class", "bubble")
+                .attr("class", function(country) {
+                    return 'country country-'+country.ref;
                 })
-                .attr("dx", function (d) { return d.properties.dx || "0"; })
-                .attr("dy", function (d) { return d.properties.dy || "0.35em"; })
-                .text(function (d) {
-                    console.log(d);
-                    return d.name
+                .attr("r", function(country) {
+                    var a = country.count/c_max * A;
+                    return Math.sqrt(a/Math.PI)
+                })
+                .attr("transform", function (d) {
+                    var t = path.centroid(d)
+                    t[0] += d.bubbleTranslations[0]
+                    t[1] += d.bubbleTranslations[1]
+                    return "translate(" + t + ")";
                 })
 
 
@@ -153,7 +197,7 @@
     d3.select(self.frameElement).style("height", height + "px");
 </script>
 
-<script type='text/javascript' src='https://public.tableau.com/javascripts/api/viz_v1.js'></script>
+<!--<script type='text/javascript' src='https://public.tableau.com/javascripts/api/viz_v1.js'></script>
 <div class='tableauPlaceholder' style='width: 804px; height: 742px;'>
     <noscript><a href='#'><img alt='Dashboard 6 '
                                src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;ex&#47;experiment_final_version&#47;Dashboard6&#47;1_rss.png'
@@ -172,7 +216,7 @@
         <param name='display_overlay' value='yes'/>
         <param name='display_count' value='yes'/>
         <param name='showTabs' value='y'/>
-    </object>
+    </object>-->
 </div>
 </body>
 </html>
