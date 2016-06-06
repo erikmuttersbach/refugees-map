@@ -1,7 +1,13 @@
 <html>
 <body>
-<iframe src="https://cdn.rawgit.com/erikmuttersbach/refugees-map/e6ee744c3d11949298ef6bf78c81c84527e7f00e/index.html"
-        width="980" height="600"
-        style="border:0;"></iframe>
+<!--<iframe src="https://cdn.rawgit.com/erikmuttersbach/refugees-map/f15bbb6a32382b34fce21b999311bce9c7708b24/index.html" width="980" height="600" style="border:0;"></iframe>-->
+<iframe src="http://localhost:3000/index.html"></iframe>
+<script>
+window.addEventListener('message', function(event) {
+  if(event.data && event.data.mouseover) {
+    console.log(event.data.mouseover)
+  }
+}, false)
+</script>
 </body>
 </html>

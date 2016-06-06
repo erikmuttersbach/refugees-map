@@ -222,6 +222,11 @@
                     t[1] += d.bubbleTranslations[1]
                     return "translate(" + t + ")";
                 })
+                .on('mouseover', function(d, i) {
+                    if(window.parent && typeof(window.parent.postMessage) == 'function') {
+                      window.parent.postMessage({mouseover: d.name}, '*')
+                    }
+                })
                 .on("mousemove", function (d, i) {
                     var mouse = d3.mouse(svg.node()).map(function (d) {
                         return parseInt(d);
